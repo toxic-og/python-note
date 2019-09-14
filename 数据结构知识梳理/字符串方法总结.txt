@@ -1,0 +1,87 @@
+一，字符串的定义
+1.字符串是字符的有序序列，是字符的集合。
+2.字符串用单引号，双引号和三引号表示
+3.字符串是不可变的
+4.字符串是线性可迭代的
+
+二，字符串的增删改查
+字符串跟元组一样，不可变，一旦定义就不能修改，所以字符串的用法主要有字符串的连接，分割，查找和替换。
+1.连接的方法有两种 join 和 +
+(1), join方法
+'string'.join(iterable)
+iterable必须是一个可迭代的字符串类型
+返回的是一个新的字符串
+如：'abc'.join('def') --> dabceabcfabc 
+(2), + 方法
+'string' + 'string'  
+ 返回一个新字符串
+
+2.分割的方法有三种 strip，split和partition
+(1), strip([chars]) 
+chars 指定的字符集
+从字符串的两端去除掉字符集中的所有字符
+如果未指定字符集，则去除掉两端的空白字符
+
+(2), split(sep=None, maxsplit=-1) 
+sep指定的分隔符，缺省时，sep为空白字符
+maxsplit指定分隔的次数，缺省下遍历字符串
+从左到右按指定的字符集进行切分，一般情况下直接缺省，按照空白字符分隔字符串。
+rsplit(sep=None, maxsplit=-1) 
+方法与split一样，只不过是从右到左进行分隔
+splitlines(keepends) 
+直接按照行来进行分隔，keepends指的是是否要保留行分隔符，比如\n, \r\n, \r 等
+split，rsplit和splitlines这三种方法最后返回的都是套着列表的字符串
+
+(3), partition(sep) 和 rpartition(sep)
+这是一刀流分隔法，这个方法只切一刀，就是从左到右或者从右到左分隔
+分隔符必须指定
+按照指定的字符集将字符串分隔成一个三元组，这个三元组是由头，分隔符，尾三部分组成。
+如果没找到分隔符，那么就返回头，空，空的三元组。 
+
+3.查找
+(1), 索引查找  
+'string'[index]  
+返回的的字符串
+(2), find(sub[, start[, end]])  
+sub是子串，[start，end] 是查找范围
+从左到右查找子串，返回的是索引值，找不到返回-1
+rfind 从右到左查找
+(3), index(sub[, start[, end]])
+跟find用法一样，只不过查不到子串返回ValueError
+rindex 从右到左的查找子串
+
+4，替换
+replace(old, new[, count])
+old指要替换的字符串，new指替换成的字符串，count指替换次数
+返回新字符串
+
+三，字符串的其他操作
+1，字符串判断
+endswith(suffix[, start[, end]])  可以指定一个区间，看字符串是否是以suffix结尾
+startswith(prefix[, start[, end]])  可以指定一个区间，看字符串是否以prefix开头
+
+is系列的判断方法
+isalunum() 是否是数字和字母的组合
+isalpha() 是否是字母
+isdecimal() 是否只包含十进制数字
+isdigit() 是否全部数字(0~9)
+isidentifier() 是不是字母和下划线开头，其他都是字母，数字，下划线
+islower() 是否都是小写
+isupper() 是否都是大写
+isspace() 是否只包含空白字符
+
+2.字符串格式化
+python3中字符串的格式化用format函数
+'{} {xxx}'.format(*args, **kwargs)
+args 是位置参数，是一个元组
+kwargs 是关键字参数，是一个字典
+{} 花括号表示占位符
+{xxx} 表示在关键字参数中搜索名称一致的
+format还有对齐和浮点数的用法
+
+3.字符串大小写
+'string'.upper() 字符串转换成全大写
+'string'.lower() 字符串转换成全小写
+'string'.swapcase() 交互大小写
+
+
