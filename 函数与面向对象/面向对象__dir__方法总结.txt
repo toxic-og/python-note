@@ -1,0 +1,148 @@
+dir方法总结：
+一，打印类的dir
+#animal.py
+
+class Animal:
+    x = 123
+def __init__(self, name):
+    self.name = name
+    self.age = 10
+    self.weight = 20
+
+print(0, 'animal module\'s name {}'.format(dir()))
+
+执行结果：
+animal module's name ['Animal', 'FORMAT', '__annotations__', '__builtins__', '__cached__', '__doc__', '__file__', '__init__', '__loader__', '__name__',
+ '__package__', '__spec__', 'futures', 'logging', 'threading', 'time', 'worker']
+
+返回的是模块的属性，返回列表可迭代对象，没有定义dir方法，从实例，类，及祖先类上收集信息。因为没有实例化，所以实例化属性pass
+
+#Cat.py
+import animal #没有这句下面的2号打印语句会报错，找不到animal
+from animal import Animal
+
+class Cat(Animal):
+    x = 'cat'
+    y = 'abcd'
+
+class Dog(Animal):
+    def __dir__(self):
+        return ['dog']
+
+print(1, 'current module\'s name {}'.format(dir()))
+
+print(2, 'animal module\'s name {}'.format(dir(animal)))
+
+print(3, 'object is __dict__ = {}'.format(sorted(object.__dict__.keys())))
+
+print(4, "Animal's dir() = {}".format(dir(Animal)))
+
+print(5, "Cat's dir() = {}".format(dir(Cat)))
+
+print('~~~~~~~~~~~~~~~~~~')
+
+导入模块打印 
+0 animal module's name ['Animal', '__builtins__', '__cached__', '__doc__', '__file__', '__init__', '__loader__', '__name__', '__package__', '__spec__']
+这里打印的是animal模块的属性，这里的属性与其本模块打印的略有差别
+
+1 current module's name ['Animal', 'Cat', 'Dog', '__annotations__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__', 'animal']
+打印的是模块名词空间内的属性，导入animal模块，导入animal中的Animal类，然后从Cat模块中打印dir方法，那么收集的属性就是本模块的属性，这个打印结果与上面animal
+模块单独的打印结果很相像
+
+2 animal module's name ['Animal', '__builtins__', '__cached__', '__doc__', '__file__', '__init__', '__loader__', '__name__', '__package__', '__spec__']
+因为第二条已经指向了animal这个模块，所以打印出来的结果跟导入模块打印结果一样
+
+3 object is __dict__ = ['__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__',
+ '__lt__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__']
+打印的是object的字典中的key，这是根类，里面当然是有__dir__的，基本上所有的魔术方法都在这里了
+
+4 Animal's dir() = ['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', 
+'__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', 'x']
+这是Animal的属性
+
+5 Cat's dir() = ['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', 
+'__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', 'x', 'y']
+指向了查看Cat的属性，这个类里面有x和y，跟animal相比只是多了一个y属性
+目前看来，如果在类里面找dir方法，而且dir在类里没有定义，那么打印出来的就是这个模块的属性，会最大限度的找这个模块里面的所有属性
+
+二，打印实例的dir
+#animal.py
+
+class Animal:
+    x = 123
+    def __init__(self, name):
+        self.name = name
+        self.age = 10
+        self.weight = 20
+
+#Cat.py
+
+import animal
+from animal import Animal
+
+class Cat(Animal):
+    x = 'cat'
+    y = 'abcd'
+
+class Dog(Animal):
+    def __dir__(self):
+        return ['dog']
+
+tom = Cat('tom')
+print(1, sorted(dir(tom)))
+print(2, sorted(tom.__dir__()))
+print(3, "Dog's dir = {}".format(dir(Dog)))
+
+dog = Dog('snoppy')
+print(4, dir(dog))
+print(5, dog.__dict__)
+
+1 ['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__',
+ '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', 'age', 'name', 'weight', 'x', 'y']
+第一条打印的是猫的实例，这里不仅打印了猫的类的属性，还打印了继承的Animal类上初始化的属性
+
+2 ['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__',
+ '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', 'age', 'name', 'weight', 'x', 'y']
+第二条的结果跟第一条等价
+
+3 Dog's dir = ['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__',
+ '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', 'x']
+第三条就是在找类属性，跟实例无关
+
+4 ['dog']
+因为Dog实例定义了__dir__()方法，所以打印出来的结果就只是return的部分，没有上面的那一老串东西
+
+5 {'name': 'snoppy', 'age': 10, 'weight': 20}
+
+最后总结一下，dir() 括号里面的对象不同，返回的结果不同，如果里面的一个模块对象，返回的是模块的属性名和变量名。如果括号里面是一个类对象，返回的是类的属性名
+和基类的属性名。如果里面的是实例对象，返回的不仅有类的属性，基类的属性，还有实例初始化的属性，包括了继承类
+
+def test(a = 50,b = 100): 
+    print(dir()) #函数中
+
+class Person:
+    def show(self):
+        a = 100
+        t = int(a)
+        print(dir()) #方法中
+
+test()
+['a', 'b']
+
+Person().show()  
+['a', 'self', 't']
+
+dir(obj)，如果括号里面省略没写，那么dir()在模块中时，返回的是模块的属性和变量名。
+如果在函数中或者在方法中，返回的是本地作用域的变量
+
+三，__dir__ 查看属性
+意义：返回类或者对象的所有成员名称列表，dir()函数调用__dir__（)。使用实例调用时，如果提供__dir__()，则返回其返回值，要求
+是可迭代对象。如果没有提供__dir__()，则会从实例和类及祖先类中收集信息
+
+dir(obj)对于不同类型的对象obj有着不同的行为：
+如果对象是模块对象，返回的列表包含模块的属性名和变量名
+如果对象是类型或者类对象，返回的列表包含类的属性名，及它的基类的属性名
+如果obj不写，返回列表包含内容不同：
+    在模块中，返回模块的属性和变量名
+    在函数中，返回本地作用域的变量名
+    在方法中，返回本地作用域的变量名
