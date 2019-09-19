@@ -1,0 +1,296 @@
+魔术方法 
+一，上下文管理
+1.基本解读
+文件IO操作可以使用with...as...语法对文件对象实行上下文管理。
+只有实现了__enter__() 和 __exit__()这两个方法的类，才能使用with...as...语法进行上下文管理，这个类就属于上下文管理的对象
+
+__enter__  有这个方法就可以进入与此对象相关的上下文，如果存在该方法，with语法会把该方法的返回值绑定到as子句
+中指定的变量上
+__exit__  有这个方法就可以退出与此对象相关的上下文
+实现的过程，在一个类进行实例化的时候，这时候不会调用enter，只有在进入with语句块的时候才会调用__enter__方法，然后
+执行语句体，最后在离开with语句块的时候，调用一下__exit__方法。with语句并不会开辟一个新的作用域，只是开启了一个上
+下文的运行环境，在执行前做一些准备工作，执行以后做一些收尾工作
+
+python的上下文管理是很安全的，哪怕是通过sys.exit() 直接退出当前的解释器，只要是进入了with语句的范围，__exit__()方法
+依然会被执行的，所以上下文管理是安全的，经常用在线程或者进程中释放锁。
+
+2.实例
+class Cars:
+    def __init__(self):
+        self.items = []
+
+    def __enter__(self):
+        self.items.append(100)
+        print(self.items)
+        #return self
+        #return 1
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print('bye')
+
+p = Cars()
+with p as c:
+    print(p,c)
+    print(p == c)
+
+只有在__enter__中return self这种情况下，p跟c才是相等的，否则不管是没有return还是return 1都不相等。因为with语法
+会把__enter__方法的返回值赋值给as子句的变量，所以没有return就把None赋给变量，return 1就把1赋给变量，不管是
+None，还是1肯定跟Cars实例是不相等的，只有__enter__返回self实例自身，p跟c才会是一个，所以__enter__方法的返回
+值就应该是上下文中使用的对象
+
+3.方法参数
+__enter__(self)
+__exit__(self, exc_type, exc_value, traceback) 这三个参数都与异常有关，如果该上下文退出没有异常，这3个参数都为None
+如果有异常，exc_type 和 exc_value表示异常类型和异常的值，traceback表示异常的追踪信息
+__exit__方法最后如果return一个等效为True的值，会压制异常，否则异常就会外抛
+
+4.上下文应用场景
+增强功能，类似装饰器的效果，在代码执行的前后增加代码，增强其功能
+资源管理，打开了资源需要关闭，如文件对象，网络连接，数据库连接
+权限验证，在执行代码前，做权限的验证，在__enter__中处理
+
+二，反射
+1.反射定义：指的是在运行时获取类型定义信息。运行时指的是程序被加载到内存中执行的时候。反射的作用就是一个对象能够
+在运行时，像照镜子一样，反射出其类型信息，比如找出其type，class，attribute或是method，这种能力称为反射或自省。
+具有反射能力的函数有：type(), isinstance(), callable(), dir(), getattr() 
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __str__(self):
+        return 'point({} {})'.format(self.x, self.y)
+
+    def show(self):
+        print(self.x, self.y)
+        print(self)
+
+p = Point(4, 5)
+print(p)  #调__str__可视化方法
+print(p.__dict__)
+p.__dict__['x'] = 90  #改实例的字典
+print(p.__dict__)
+p.z = 10  #动态给实例增添属性
+print(p.__dict__)
+print(p.__dir__()) #查看属性
+这个例子通过属性的__dict__来访问属性，本质上也是利用了反射的能力，但是用这种方法访问用起来不方便，看着也别扭，不优雅
+python提供了一些内置函数可以进行优雅的访问。
+
+2.反射相关的内置函数
+getattr(object, name[, default])  通过name返回object的属性值，当属性不存在时，返回default，如果default没设置，抛出
+AttributeError。name必须是字符串
+
+setattr(object, name, value)  object属性不在会直接覆盖，不存在就新增，跟字典添加kv对很像
+hasattr(object, name)  判断对象是否是这个名字的属性，name必须是字符串
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __str__(self):
+        return 'point({} {})'.format(self.x, self.y)
+
+    def show(self):
+        print('看到我时说明进入了hasattr')
+
+p1 = Point(4, 5)
+p2 = Point(10, 10)
+print(repr(p1), str(p2), sep='\n')
+print(p1.__dict__)
+setattr(p1, 'y', 16)
+setattr(p1, 'z', 10)  
+print(p1)
+print(getattr(p1,'__dict__'))  #所以说上面已经给p1添加了属性z，但是没有呈现的渠道，所以z只能在字典中呈现出来。
+
+打印结果：
+<__main__.Point object at 0x0000018723C57400> #容器类在打印的时候，不会走str方法，会走系统默认的打印格式
+point(10 10)
+{'x': 4, 'y': 5}
+point(4 16)
+{'x': 4, 'y': 16, 'z': 10}
+
+#hasattr方法可以动态的进行操作
+if hasattr(p1, 'show'):
+    getattr(p1, 'show')()
+
+if not hasattr(p1, 'add'): #给实例增加add属性，在实例字典中
+    setattr(p1, 'add', lambda self, other: Point(self.x + other.x, self.y + other.y))
+
+if not hasattr(Point, 'sub'): #给类增加sub属性，在类字典中
+    setattr(Point, 'sub', lambda self, other: Point(self.x - other.x, self.y - other.y))
+
+print(Point.sub(p1, p2))
+print(p1.add(p1, p2))
+print(p1.__dict__)
+print(Point.__dict__)
+
+打印结果：
+看到我时说明进入了hasattr
+point(-6 -5)
+point(14 15)
+{'x': 4, 'y': 5, 'add': <function <lambda> at 0x00000154366B3BF8>}
+{'__module__': '__main__', '__init__': <function Point.__init__ at 0x00000154366B3F28>,
+ '__str__': <function Point.__str__ at 0x00000154366CD048>, 'show': <function Point.show at 0x00000154366CD0D0>,
+ '__dict__': <attribute '__dict__' of 'Point' objects>, '__weakref__': <attribute '__weakref__' of 'Point' objects>, 
+'__doc__': None, 'sub': <function <lambda> at 0x00000154366CD158>}
+
+通过一个小实验可以看出这样的动态的增删属性的方式是运行时改变了类或实例的方式，但是装饰器或者Mixin类都是在定义的
+时候就已经决定了，所以反射具有更大的灵活性
+
+简易的注册函数：
+class Dispatcher:
+    def __inti__(self):
+        pass
+    def reg(self, name, fn):
+        setattr(self, name, fn) #这个注册函数本质上就是一个setattr
+    def run(self):
+        while True:
+            cmd = input('>>>').strip()
+            if cmd == 'quit':
+                break
+            getattr(self, cmd, lambda :print('Unknown Cmd {}'.format(cmd)))()
+
+dis = Dispatcher()
+dis.reg('is', lambda :print('this is first fn'))
+dis.run()
+
+3.反射相关的魔术方法
+__getattr__(self, item) 这个方法的作用在于找不到类的属性时会调用这个方法，如果这个方法没有实现则抛出AttributeError异常
+现在的属性查找顺序是：实例的dict --> 类的dict --> 继承类的dict --> 调用__getattr__() --> 抛出AttributeError异常
+
+class Dispatcher:
+    def __inti__(self):
+        pass
+    def reg(self, name, fn):
+        setattr(self, name, fn)
+    # def run(self):
+    #     while True:
+    #         cmd = input('>>>').strip()
+    #         if cmd == 'quit':
+    #             break
+    #         getattr(self, cmd, lambda :print('Unknown Cmd {}'.format(cmd)))()
+
+    def __getattr__(self, item):
+        print('没有 {}'.format(item))
+
+dis = Dispatcher()
+dis.reg('is', lambda :print('this is first fn'))
+dis.t  #没有 t
+
+__setattr__(self, key, value) 实例通过点号设置属性时，就会调用这个方法，但是并不会自动的加入实例字典中，需要手动的添加
+这个方法可以拦截对实例属性的增加，修改操作，如果要设置生效，需要自己操作实例的字典，初始化也会调用这个方法
+
+class Dispatcher:
+    def __init__(self):
+        pass
+    def reg(self, name, fn):
+        setattr(self, name, fn)
+    def __getattr__(self, item):
+        print('没有 {}'.format(item))
+    def __setattr__(self, key, value):
+        print('setattr {} = {}'.format(key, value))
+        self.__dict__[key] = value  #手动加入字典，没有这句时，实例是空字典，但是这句话注意会跟__getattribute__冲突
+
+dis = Dispatcher()
+dis.reg('is', lambda :print('this is first fn'))
+dis.x = 10
+print(dis.__dict__)
+dis.__dict__['x'] = 40
+print(dis.__dict__)
+
+__delattr__(self, item) 当通过实例来删除属性时调用这个方法
+
+class Dispatcher:
+    def __init__(self):
+        pass
+    def reg(self, name, fn):
+        setattr(self, name, fn)
+    def __getattr__(self, item):
+        print('没有 {}'.format(item))
+    def __setattr__(self, key, value):
+        print('setattr {} = {}'.format(key, value))
+        self.__dict__[key] = value
+    def __delattr__(self, item):
+        print('不能删除')
+
+dis = Dispatcher()
+dis.reg('is', lambda :print('this is first fn'))
+dis.x = 10
+del dis.x #del语句删除属性x时，会调用__delattr__方法，最后看字典x并没有删除
+print(dis.__dict__)
+
+实验结果就是如果没有__delattr__方法，那么del语句就会把x属性删掉，但是如果有这个方法在，就不会删除，并且调用
+__delattr__
+
+__getattribute__(self, item) 实例所有的属性调用都从这个方法开始
+
+class Point:
+    z = 6
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    def __getattr__(self, item):
+        print('没有 {}'.format(item))
+    def __setattr__(self, key, value):
+        print('setattr {} = {}'.format(key, value))
+        #self.__dict__[key] = value
+    def __delattr__(self, item):
+        print('不能删除')
+    def __getattribute__(self, item):
+        return item
+        return 999
+        #raise AttributeError
+
+dis = Point(4,5)  #初始化的时候会调用__setattr__方法
+print(1,dis.__dict__)
+print(2,dis.z)
+print(3,dis.x)
+print(4,dis.t)
+print(5,dis.__dict__)
+
+打印结果：
+setattr x = 4
+setattr y = 5
+1 __dict__   #999
+2 z   #999
+3 x   #999
+4 t   #999
+5 __dict__   #999
+
+结论：因为有__getattribute__方法在，拦截了属性查找的路线，所有的属性方法全都走了__getattribute__, 并把return值作为
+了属性查找的结果返回控制台，如果该方法抛出AttributeError异常，会访问__getattr__方法，表示属性没有找到
+
+class Point:
+    z = 6
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    def __getattr__(self, item):
+        print('没有 {}'.format(item))
+    def __setattr__(self, key, value):
+        print('setattr {} = {}'.format(key, value))
+        self.__dict__[key] = value
+    def __delattr__(self, item):
+        print('不能删除')
+    def __getattribute__(self, item):
+        return object.__getattribute__(self, item)
+
+这样修改一下就正常了，__getattribute__方法为了避免在该方法中无限递归，它的实现应该永远调用基类的同名方法以访问需要
+的任何属性，例如object.__getattribute__(self, item)。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
