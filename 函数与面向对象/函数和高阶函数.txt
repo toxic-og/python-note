@@ -1,0 +1,216 @@
+一，函数
+1.函数的参数
+函数定义的参数列表是形参，调用时写入的参数为实参。形参可以随便写，但是为了调用方便，也为了可读性，建议形参不要
+随便修改
+函数的参数大致分为两种，位置传参和关键字传参，两种传参方式使用一种就可以，如果两种都出现，关键字参数必须是在位
+置参数后面。关键字参数就是缺省参数，简化了函数调用
+
+函数参数细分的话，又可以多分出可变参数和keyword-only参数，可变参数又分为位置可变参数和关键字可变参数。位置可变
+参数是尽可能的多收集对应位置传参的参数，关键字可变参数是尽可能的收集关键字传参的参数。keyword-only参数是在位置
+可变参数后面出现的普通参数。
+
+可变参数一定是要放在一般参数后面的，因为它们是贪婪的会尽可能的多收集，可变位置参数是一个*号，收集完若干实参之后
+会形成一个元组，可变关键字参数是两个**号，收集完若干实参之后会形成一个字典。
+kw-only特殊，被夹在了两个可变之间，但是在传参的时候，要用谁=谁的方式传参。
+
+现在把参数经过细分之后就可以对参数列表进行一个排序：位置参数(普通参数)，关键字参数(缺省参数)，可变位置参数，key
+word-only参数(缺省kw-only参数)，可变关键字参数。
+例：
+def fn(x, y=2, *args, z, c=9, **kwargs):  #最复杂的参数传参也不过就这样了
+    pass
+
+2.函数参数解构
+参数解构是给函数传实参用的，一个*号用来解非字典类型的集合，解成位置参数进行传参。两个**号用来解字典类型的集合，
+解成关键字参数进行传参。
+
+def xadd(x, y):
+    return x + y
+
+xadd(*(4,5))
+xadd(*[8,9])
+xadd(**{'x':2, 'y':6})
+这就是参数的解构，在形参上有可变参数，在实参上有参数解构。
+
+3.函数的返回值和作用域
+返回值：
+函数的返回值关键字是return，所有的函数都有返回值，如果没有写return，则隐式的表示该函数的返回值是return None
+return语句并非一定要是函数体最后一句话，但是一旦函数return了，后面的语句就不会再执行，即使有语句也是废句，所
+以一般把return放在最后一句。
+函数可以有多个return 语句，但是只会有一条被执行，如果所有的if判断后面的return 语句都没有被执行，那么一定就是执
+行了return None。
+函数的return 语句不能同时返回多个值，如果返回多个值，会被隐式的封装成一个元组返回
+
+作用域：
+函数的嵌套会形成作用域，还会形成闭包，作用域就是一个标识符的可见范围，这就是函数变量的作用域。
+作用域又分为全局作用域和局部作用域，全局作用域在整个程序的运行环境中都可见，局部作用域只能在函数或者类的内部
+空间可见，局部变量不能超过该作用域的范围，这个变量在这个局部空间内是可见的，超出去就变成了未定义变量。
+
+闭包是什么呢，简单的说就是内层函数引用了外层函数的自由变量，自由变量的意思就是未在本地作用域中定义的变量。闭
+包有什么作用，作用就是外层函数的变量对内层是可见的，比如外层定义了一个x=1，那么在内层函数作用域中就可以直接
+使用这个变量x。
+
+解决局部作用域和全局作用域的问题有两个途径，一个是使用关键字global，这样会对局部作用域中的某变量进行全局变量
+的声明前提是全部作用域中有这个变量，这样在局部作用域中，这个声明的变量就不是局部变量了，就是全局变量。global
+关键字并不是定义一个新变量，而是在局部作用域内把这个变量进行了声明，提升为全局变量，所以需要注意的一个问题就
+是如果在局部作用域内对这个被声明的变量进行了重新赋值，那么就是对这个全局变量的赋值。global关键字尽量不要使用，
+因为函数的目的就是为了封装，与外界隔离，如果函数需要用外界的全局变量，建议用传参方式解决，global并不是很好的
+解决方法。
+
+另外一个方案就是使用nonlocal关键字，nonlocal关键字的作用是将某变量标记为不在本作用域定义，而在上层某一级局部
+作用域定义，并且不是全局作用域中定义。
+
+最后总结一下变量名解析原则LEGB
+LEGB指的是函数作用域的等级关系，或者说函数的作用域所影响的范围的大小关系。L指的local，是本地作用域的命名空间，
+只能影响某个单一函数空间内的变量，也叫局部作用域，函数调用时创建，调用结束消亡。
+E指enclosing，这是比局部作用域在外一层的作用域，这里是嵌套函数的外部函数的命名空间，在这一层定义的函数变量可以
+使用到闭包。这一层的作用域可以影响到local。
+G指的是golbal，全局作用域，是nonlocal在外一层的作用域，全局作用域一般定义在模块上，除了内建函数之外，可以说是
+最外层的作用域，在这里定义的变量可以影响到enclosing和local。
+B指的是Build-in，内置模块的命名空间，是比全局作用域更大的一个影响范围，生命周期从python解释器启动时创建到解释
+器退出时消亡。
+所以一个变量的查找顺序，先在局部作用域找，找不到往外找，一直找到golbal或者build-in。
+
+4.匿名函数
+匿名函数就是没有名字的函数，python中使用lambda表达式构造一个匿名函数，匿名函数可以作为函数的参数或者函数的
+返回值来构成高阶函数
+匿名函数的格式：
+lambda 参数列表 ：返回值
+lambda表达式的参数列表不需要小括号，用冒号来分隔参数列表和表达式或者说是表达式的返回值。
+lambda表达式也不需要return语句，返回值就是return语句，而且lambda表达式只能写在一行上，也叫单行函数。
+
+5.递归函数
+递归函数就是直接的或者间接的调用了自己，就是递归
+递归函数一定要有边界条件，也就是退出条件，否则就会出现无限递归问题，直到把栈挤爆才会退出
+递归函数的调用深度不宜过深，但是普遍的递归函数都有效率问题，能不用则不用。
+
+二，高阶函数
+1.柯里化和装饰器
+什么是高阶函数和柯里化：
+高阶函数一定有下面两种特性，一是传参的时候用到了函数，二是返回值是一个函数。只要满足这
+两个特性之一的就是高阶函数。
+柯里化就是把一个两参的函数转化成内外嵌套的两个一参函数。如：
+def fn(x):
+    def _fn(y):
+        return x + y
+    return _fn
+
+柯里化是装饰器的前提，装饰器的目的就是为了实现功能性的增强
+
+2.参数注解
+关于参数注解和其背后目的的相关总结：
+python语言是动态语言，这是它最显著的优点，同时也成为了一个最明显也是最需要解决的缺点。因为动态所以变量随时可以
+被重新赋值，修改，定义。变量可以一直变化而且可以被赋予不同的类型。
+但是因为这个原因，所以变量的类型就不在是人为决定的了，而是解释器来决定的。好比一个函数里面的两个参数，这两个参数
+是什么类型，写函数的人是决定不了的，只有被调用以后实际传入的实参是什么类型，那么此时这两个变量就是什么类型了。
+
+那么这就造成了一个弊端，就是如果传入的实参类型不对，那么就会出现异常，但是这种不可控的因素目前还没有被很好的掌握。
+所以为了能解决这一弊端，python引入了类型注解这种方法，def add(x:int, y:int) -> int : 通过给参数和返回值进行注解这样的
+一个方法，来建议使用者传入注解的类型，但是这也只是一种建议，并未做强制的要求。因为一旦强制下来，实质上python的特
+性就变成静态语言了。所以说类型注解这种方法其实也只是一种辅助的说明，并不会对函数的参数进行类型的检查。
+
+3.inspect模块
+模块中的方法：
+inspect.signature(callable)，这个方法用来获取签名，函数的签名包含了一个函数的信息，包含了函数名，参数类型，函数所在
+的类和名词空间等其他信息，一般情况这个签名就是函数的参数列表
+这个方法会返回一个Parameter对象，parameters是一个有序字典
+这个参数对象保存在元组中，是只读的
+name，是参数的名字
+annotation，参数注解，可能没有定义
+default，参数的缺省值，可能没有定义
+empty，特殊的类，用来标记default属性或者注释annotation属性的空值
+kind，实参如何绑定到形参，就是形参的类型
+注意以上的五种属性并不是Parameters的属性，那么这些属性应该怎么访问呢？
+i, item = inspect.signature().parameters.item() --> name, param = item 
+上面这五种属性是param的属性，所以说要把这个有序字典解两次才能解出想要的东西
+
+inspect模块中还有一些其他方法：
+inspect.isfunction(add)  是否是函数
+inspect.ismethod(add)  是否是类方法
+inspect.isgenerator(add)  是否是生成器对象
+inspect.isgeneratorfunction(add)  是否是生成器函数
+inspect.isclass(add)  是否是类
+inspect.ismodule(add)  是否是模块
+inspect.isbuuiltin(add)  是否是内建对象
+
+4.functools模块
+import  functools 
+
+（1）cmp_to_key(func)  这个函数是将python 2 中的旧式的比较函数转换成新式的 key function（键函数）
+cmp_to_key(func)在一些函数的key参数中使用，如sortde(),min(),max()等。
+如： sorted(iterable, key=cmp_to_key(locale.strcoll))  
+  
+（2）@lru_cache(maxsize=128, typed=False) 这是一个装饰器，提供缓存功能。用于包装一个函数，在下次以相同传参调用
+时直接返回上一次的结果，用于节约频繁请求的时间。由于内部结构使用了字典，所以位置参数和关键字参数都要可hash。另外
+不同顺序进行传参时会被认为是不同的参数调用。
+
+maxsize决定了缓存的最大上限是128，如果maxsize=None，则表示LRU功能被禁用，且缓存的数量无上限。但是其实对于缓
+存来说没有必要一口气直接开辟出一个很大的很久都用不完的大空间，很浪费资源，还是随时用随时开辟的方法最好，所以ma
+xsize设置为2的幂时性能是最佳的。
+
+typed默认情况下是False，如果typed=True，则表示的是不同类型的参数被当做不同情况分别缓存。如3和3.0
+
+（3）partial(func, *args, **kwargs) 
+例：
+def partial(func, *args, **keywords):
+    def newfunc(*fargs, **fkeywords):
+        newkeywords = keywords.copy()   #外层关键字参数字典进行更新，如果是关键字传参，则拷贝，不是则是空字典
+        newkeywords.update(fkeywords)  #用内层关键字参数字典进行更新，如果是关键字传参则添加进去，不是则空。
+        return func(*args, *fargs, **newkeywords)  #第一的位置是外层的位置参数传参，第二个位置是内层的位置传参
+    newfunc.func = func  
+    newfunc.args = args  #收集位置参数
+    newfunc.keywords = keywords  #收集关键字参数
+    return newfunc
+
+从例中可以看出来，partial调用以后，返回的是func函数，其中func是作为partial中的第一个参数。偏函数就是把func函数
+的部分参数固定下来，相当于这部分固定下来的参数有了缺省值，然后返回一个新的函数
+
+（4）reduce(function, iterable[, initializer])
+例：
+def reduce(function, iterable, initializer=None):
+    it = iter(iterable)
+    if initializer is None:
+        value = next(it)
+    else:
+        value = initializer
+    for element in it:
+        value = function(value, element)
+    return value
+
+reduce的参数是一个函数，可迭代对象，初始化值。把可迭代对象包一下变成一个生成器。然后初始化值如果是None，则生成
+器第一个值给value如果给初始化传实参，则实参是value。然后遍历生成器扔进function中，如果function函数是一个相加函数，
+则初始化的值加遍历的生成器之后的值返回出去，如果是相见的，则初始化的值与依次遍历生成器产生的值相减返回出去。总之
+你想要达到一个什么效果，就在function这里选择什么函数实现。
+
+（5）@wraps(wrapped, assigned=WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES)  
+#因为后面两个参数是用了缺省值，所以也可以把这个装饰器看做是一参的装饰器，这个装饰器的作用就是为了
+调用函数update_wrapper()  另外：wrapped指的是被包装的函数
+例：
+def wraps(wrapped,
+          assigned = WRAPPER_ASSIGNMENTS,
+          updated = WRAPPER_UPDATES):
+    return partial(update_wrapper, wrapped=wrapped    
+
+#  返回一个偏函数，这个偏函数又返回update_wrapper 这个函数，所以其实就是调用update_wrapper
+
+（6）update_wrapper(wrapper, wrapped, assigned=WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES)
+例：
+>>> def my_decorator(f):
+...     @wraps(f)   #wraps(example) -> partial(update_wrapper,wrapped=example) ->
+	            update_wrapper(wrapper,wrapped=example) 
+                          # 所以@wraps(f) 在这里等价于@update_wrapper((wrapper,wrapped=example) 然后把下面的标识符
+	             用位置传参提上来在return回去就完成了偷梁换柱的作用。
+...     def wrapper(*args, **kwds):
+...         print('Calling decorated function')
+...         return f(*args, **kwds)
+...     return wrapper
+...
+>>> @my_decorator
+... def example():
+...     """Docstring"""
+...     print('Called example function')
+...
+>>> example()
+
+update_wrapper((dst=wrapper, src=example) 的功能主要就是把原函数example的名字，模块，说明还有文档字符串这些
+属性都给目标wrapper
+
