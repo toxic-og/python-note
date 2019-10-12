@@ -1,0 +1,125 @@
+一，正则表达式的基础语法：
+元字符：
+. 匹配除换行符之外的任意一个字符
+[abc] 匹配abc中的任意一个字符，这是字符的集合，只能表示一个字符位置
+[^abc] 匹配除去abc的任意一个字符，也是只能表示一个字符位置
+[a-z] 匹配a-z的任意一个字符，表示一个字符位置
+[^a-z] 匹配除去a-z的任意的一个字符，表示一个字符位置
+([] 中括号的意思是匹配什么和什么，[abc] 本质上匹配的是a和b和c，[\t ] 匹配的是\t和空格)
+\b 匹配单词的边界， 比如\ba 找出以a开头的单词，t\b 找出以t结尾的单词
+\B 不匹配单词的边界，比如\Bt 找出不以t开头但是包含t的单词，e\B 找出不以e结尾但是包含e的单词
+\d [0-9] 匹配1位数字 (一个\d就表示匹配1位任意数字)
+\D [^0-9] 匹配1位非数字
+\s 匹配1位空白字符，包含了换行符，制表符，空格
+\S 匹配1位非空白字符
+\w 匹配[a-z A-Z 0-9 _] 匹配大小写26位字母和10位数字，包含下划线，包含中文的字
+\W 匹配\w之外的字符
+\ 转义符，在正则表达式中有特殊意义的符号，如果想还原它本来的意思就用转义符\  例如：'\\' 这个符号匹配'\' 而不是转义符
+x|y 匹配x或y  例如：wood food foot took  'w|food' 就只能匹配wood和food
+
+重复：
+* 表示前面的正则表达式会重复0次或多次    例如：zo*能匹配z 能匹配zoo，注意重复0次就是没有，多次至少两个
++ 表示前面的正则表达式重复至少1次    例如：zo+ 能匹配zo以及zoo，表示单词z后面至少有1个o字符
+？表示前面的正则表达式会重复0次或1次   例如：zo？ 能匹配z以及zo，表示单词z后面最多有一个o字符
+{n} 表示固定的重复n次   例如：zo{1} 表示只能匹配zo，z后面只能有一个o字符
+{n,} 表示至少要重复n次   例如：zo{0,} 等价于 zo* ，zo{1,} 等价于zo+
+{n,m} 表示重复n到m次   例如：zo{0,1} 等价于zo？
+
+捕获(分组)：
+(pattern) 使用小括号指定一个子表达式，也叫分组，捕获后会自动分配组号从1开始，可以改变优先级
+\数字 匹配对应的分组  例如：(very) \1 匹配的结果就是very very，但是捕获的组是very
+(?:pattern) 匹配pattern但不获取匹配结果，也就是说这是一个非获取匹配，不进行储存供以后使用
+(?<name>exp) 分组捕获，但是可以通过name访问分组。
+(?'name'exp) 这也是分组捕获，但是python语法规定必须是(?<name>exp)
+
+零宽断言： 匹配wood tood foot food
+(?=exp) 零宽度正预测先行断言，断言exp一定在匹配的右边出现，也就是说断言后面一定跟个exp   例如:f(?=oo) 匹配foot,food
+(?<=exp) 零宽度正回顾后发断言，断言exp一定在匹配的左边出现，也就是说前面一定有个exp前缀 例如:(?<=f)ood
+
+负向零宽断言：
+(?!exp) 零宽度负预测先行断言，断言exp一定不会出现在右侧，也就是说断言后面一定不是exp  例如:\d{3}{?!d} 匹配3位数字
+并断言在3位数字后面一定不是数字，foo(?!d) foo后面一定不是d
+(?<!exp) 零宽度负回顾后发断言，断言exp一定不会出现在左侧，也就是说断言前面一定不是exp 例如:(?<!f)ood ood左边一
+定不是f
+
+注意正则表达式的断言是条件，不会占用分组号，也不参与匹配。也就是这个条件不匹配，匹配的是这个条件的结果
+
+贪婪和非贪婪：
+正则默认下都是贪婪模式，上面的重复组代码都是贪婪的。非贪婪模式就是重复符号后加？表示尽可能少的匹配
+非贪婪：
+*?  匹配任意次，但是尽可能的少重复
++?  匹配至少一次，但是尽可能少重复
+??  匹配0次或1次，但是尽可能少重复
+{n,}?  匹配至少n次，但是尽可能少重复
+{n,m}?  匹配至少n次，至多m次，但是尽可能少重复
+
+引擎选项：
+lgnoreCase 匹配时忽略大小写
+Singleline 单行模式，可以匹配所有字符，包括\n
+Multiline 多行模式
+lgnorePatternWhitespace 忽略表达式中的空白字符，如果要使用空白字符用转义，#可以用来注释
+
+单行模式，多行模式和默认模式的区别：
+单行模式中，.号可以匹配任意字符，包括换行符，^表示整个字符串的开头，$表示整个字符串的结尾。
+多行模式中，.号匹配除换行符之外的字符，多行不影响.号，^表示行首，$表示行尾
+默认模式中，可以看做待匹配的文本是一行，不能看做多行，但是.号不能匹配换行符，^和$表示行首和行尾，而行首和行尾
+就是整个字符串的开头和结尾
+
+二，python re模块基础用法
+re模块中的常量：
+re.M  多行匹配
+re.S   单行匹配
+re.I    忽略大小写 
+re.X   忽略表达式中的空白字符
+以上这4中常量也可以叫选项，在re中使用 | 位或运算可以开启多种选项，比如 re.M|re.I|re.X
+
+re模块中的方法：
+编译方法:
+re.compile(pattern, flags=0) 
+pattern是正则表达式的字符串，flags是选项，通过设置flags可以设置编译模式，比如设置为多行匹配，或者忽略大小写等，
+返回的是正则表达式对象regex，正则表达式在re模块中没有编译是不能使用的，为了提高效率经过编译的结果最后都会保存
+下来，下次在使用同样的pattern时就不用进行再次编译。re模块中的其他方法都会调用编译，所以没有编译也会被其他方法
+调用进行编译，为了提高效率还是要先编译完在用其他匹配方法
+
+单次匹配：
+re.match(pattern, string, flags=0) 
+regex.match(string[, pos[, endpos]])
+match匹配是从字符串的开头进行匹配，regex对象match方法可以重设开始和结尾的位置，返回match对象
+
+re.search(pattern, string, flags=0)
+regex.search(string[, pos[, endpos]])
+search匹配是从头搜索直到匹配到第一个结果，regex对象search方法可以重设开始和结尾位置，返回match对象
+
+re.fullmatch(pattern, string, flags=0)
+regex.fullmatch(string[, pos[, endpos]])
+整个字符串开始匹配，很少用，我对它的理解就是严苛匹配，整个字符串要与pattern完成吻合才能匹配上，没灵活性
+
+全文搜索：
+re.findall(pattern, string, flags=0)
+regex.findall(string[, pos[, endpos]])
+对整个字符串从左到右匹配，返回所有匹配项的列表
+
+re.finditer(pattern, string, flags=0)
+regex.finditer(string[, pos[, endpos]])
+对整个字符串从左到右匹配，返回所有匹配项，返回的是迭代器，每次迭代返回的都是match对象
+
+匹配替换：
+re.sub(pattern, replacement, string, count=0, flags=0)
+regex.sub(replacement, string, count=0)
+使用pattern对字符串进行匹配，对匹配项使用repl替换，replacement可以是string，bytes，function
+
+re.subn(pattern, replacement, string, count=0, flags=0)
+regex.subn(replacement, string, count=0)
+同sub返回一个元组(new_string, number_or_subs_made)
+
+分割字符串：
+re.split(pattern, string, maxsplit=0, flags=0)
+
+分组：
+使用小括号的pattern捕获的数据被放在组group中，match，search函数可以返回match对象。findall返回字符串列表，
+finditer返回迭代器
+如果pattern中使用了分组，如果有匹配结果，会在match对象中，方法有：
+1.使用group(N)方式返回对应的分组，1到N是对应的分组，0返回整个匹配的字符串，比如：regex.match(s).group(2)
+2.如果使用了命名分组，可以使用group('name')的方式取分组，比如：regex.search(s).group('head')
+3.也可以使用group()返回所有分组，比如：regex.search(s).group()
+4.使用groupdict() 返回所有命名分组，比如：regex.search(s).group() 
